@@ -14,13 +14,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -42,6 +37,9 @@ public class ProductInfoRepositoryTest {
 
     @Autowired
     ProductInfoRepository productInfoRepository;
+
+    @Autowired
+    CompressHelper compressHelper;
 
     private static final String EXPECTED_COST = "20";
     private static final String EXPECTED_PRICE = "50";
@@ -65,54 +63,11 @@ public class ProductInfoRepositoryTest {
                 (List<ProductInfo>)productInfoRepository.findAll());
     }
 
-    private static ByteBuffer compressString(String input) throws IOException {
-        // Compress the UTF-8 encoded String into a byte[]
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream os = new GZIPOutputStream(baos)) {
-
-            os.write(input.getBytes("UTF-8"));
-            os.close();
-            //baos.close();
-            byte[] compressedBytes = baos.toByteArray();
-
-            // The following code writes the compressed bytes to a ByteBuffer.
-            // A simpler way to do this is by simply calling ByteBuffer.wrap(compressedBytes);
-            // However, the longer form below shows the importance of resetting the position of the buffer
-            // back to the beginning of the buffer if you are writing bytes directly to it, since the SDK
-            // will consider only the bytes after the current position when sending data to DynamoDB.
-            // Using the "wrap" method automatically resets the position to zero.
-            ByteBuffer buffer = ByteBuffer.allocate(compressedBytes.length);
-            buffer.put(compressedBytes, 0, compressedBytes.length);
-            buffer.position(0); // Important: reset the position of the ByteBuffer to the beginning
-            return buffer;
-        }
-
-    }
-
-    private static String uncompressString(ByteBuffer input) throws IOException {
-        byte[] bytes = input.array();
-
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPInputStream is = new GZIPInputStream(bais)) {
-
-            int chunkSize = 1024;
-            byte[] buffer = new byte[chunkSize];
-            int length = 0;
-            while ((length = is.read(buffer, 0, chunkSize)) != -1) {
-                baos.write(buffer, 0, length);
-            }
-
-            return new String(baos.toByteArray(), "UTF-8");
-
-        }
-
-    }
 
     @Test
     public void sampleTestCase() throws IOException {
         ProductInfo dave = new ProductInfo();
-        dave.setContent(compressString("huge string to be compressed"));
+        dave.setContent(compressHelper.compressString("huge string to be compressed"));
         dave.setCost(EXPECTED_COST);
         dave.setMsrp(EXPECTED_PRICE);
 
@@ -125,6 +80,6 @@ public class ProductInfoRepositoryTest {
         assertTrue("Contains item with expected cost",
                 result.get(0).getCost().equals(EXPECTED_COST));
 
-        assertThat(uncompressString(result.get(0).getContent()), is("huge string to be compressed"));
+        assertThat(compressHelper.uncompressString(result.get(0).getContent()), is("huge string to be compressed"));
     }
 }

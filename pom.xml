@@ -44,6 +44,13 @@
     </dependencyManagement>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.almworks.sqlite4java</groupId>
+            <artifactId>sqlite4java</artifactId>
+            <version>1.0.392</version>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -106,6 +113,12 @@
             <artifactId>DynamoDBLocal</artifactId>
             <version>[1.11,2.0)</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc -->
+        <!-- https://mvnrepository.com/artifact/com.almworks.sqlite4java/sqlite4java -->
+
+
+
 
 
     </dependencies>
